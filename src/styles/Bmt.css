@@ -1,5 +1,9 @@
 .smrxtHeader {
   background-color: #cc66cc;
+  font-size: 70px;
+  font-family: sans-serif;;
+  font-weight: 900;
+  display: block;
 }
 body {
   background-color: #ccccff;

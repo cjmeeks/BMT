@@ -31,6 +31,11 @@ type alias Model =
     , x : String
     , y : String
     , z : String
+    , highT : Bool
+    , zeroW : Bool
+    , lowB : Bool
+    , lowS : Bool
+
     }
 
 
@@ -47,9 +52,13 @@ model =
     , battery = ""
     , signal = ""
     , something = "BR"
-    , x = ""
-    , y = ""
-    , z = ""
+    , x = "0"
+    , y = "0"
+    , z = "0"
+    , highT = False
+    , zeroW = False
+    , lowB = False
+    , lowS = False
     }
 
 
@@ -69,10 +78,10 @@ type Msg
     | Battery String
     | Signal String
     | Clear
-    | LowSig
-    | LowBat
-    | ZeroWeight
-    | HighTemp
+    | LowSig Bool
+    | LowBat Bool
+    | ZeroWeight Bool
+    | HighTemp Bool
     | Something String
 
 
@@ -114,93 +123,17 @@ update msg model =
         Clear ->
             modelClear model
 
-        LowSig ->
-            lowSignal model
+        LowSig bool->
+            { model | lowS = bool }
 
-        LowBat ->
-            lowBattery model
+        LowBat bool->
+            { model | lowB = bool }
 
-        ZeroWeight ->
-            zeroWeight model
+        ZeroWeight bool->
+            { model | zeroW = bool }
 
-        HighTemp ->
-            highTemp model
-
-
-highTemp : Model -> Model
-highTemp model =
-    { firmware = model.firmware
-    , meid = model.meid
-    , seqNum = model.seqNum
-    , date = model.date
-    , time = model.time
-    , timeZone = model.timeZone
-    , temp = "112.3"
-    , weight = model.weight
-    , battery = model.battery
-    , signal = model.signal
-    , something = model.something
-    , x = model.x
-    , y = model.y
-    , z = model.z
-    }
-
-
-zeroWeight : Model -> Model
-zeroWeight model =
-    { firmware = model.firmware
-    , meid = model.meid
-    , seqNum = model.seqNum
-    , date = model.date
-    , time = model.time
-    , timeZone = model.timeZone
-    , temp = model.temp
-    , weight = "0"
-    , battery = model.battery
-    , signal = model.signal
-    , something = model.something
-    , x = model.x
-    , y = model.y
-    , z = model.z
-    }
-
-
-lowBattery : Model -> Model
-lowBattery model =
-    { firmware = model.firmware
-    , meid = model.meid
-    , seqNum = model.seqNum
-    , date = model.date
-    , time = model.time
-    , timeZone = model.timeZone
-    , temp = model.temp
-    , weight = model.weight
-    , battery = "3.1"
-    , signal = model.signal
-    , something = model.something
-    , x = model.x
-    , y = model.y
-    , z = model.z
-    }
-
-
-lowSignal : Model -> Model
-lowSignal model =
-    { firmware = model.firmware
-    , meid = model.meid
-    , seqNum = model.seqNum
-    , date = model.date
-    , time = model.time
-    , timeZone = model.timeZone
-    , temp = model.temp
-    , weight = model.weight
-    , battery = model.battery
-    , something = model.something
-    , signal = "2"
-    , x = model.x
-    , y = model.y
-    , z = model.z
-    }
+        HighTemp bool->
+            { model | highT = bool }
 
 
 modelClear : Model -> Model
@@ -216,9 +149,13 @@ modelClear _ =
     , battery = ""
     , signal = ""
     , something = "BR"
-    , x = ""
-    , y = ""
-    , z = ""
+    , x = "0"
+    , y = "0"
+    , z = "0"
+    , highT = False
+    , zeroW = False
+    , lowB = False
+    , lowS = False
     }
 
 
@@ -253,21 +190,77 @@ view model =
             div [ class "col-md-4 text-center"]  [ text "BR", div [] [input [onInput Something ] []] ]
     in
         div [ class "container" ]
-            [ div [class "row h1 text-center"] [text "SMRxT Bottle Message Tool"], div [class "container col-md-9"] [div [ class "row" ] [ firmView, meidView, seqView ]
-              , div [ class "row" ] [ dateView, timeView, zoneView ]
+            [ div [class "row smrxtHeader text-center span-block"] [text "SMRxT Bottle Message Tool"],  div [class "container col-md-9"] [div [ class "row" ] [ firmView, meidView, seqView ]
+            , div [ class "row" ] [ dateView, timeView, zoneView ]
             , div [class "row " ] [ tempView, weightView, batteryView ]
-            , div [ class "row " ] [ signalView ]
-            , bottleMessageView ]
-            , buttonsView ]
+            , div [ class "row " ] [ signalView, somethingView ]
+            , bottleMessageView model]
+            , checksView
+            , formView model
+            ]
 
-buttonsView : Html Msg
-buttonsView =  div [class "container col-md-3"] [div []
-    [ div [class "row"] [button [ class "btn-lg btn-primary btn-block", onClick LowSig ] [ text "Low Signal" ]]
-    , div [class "row"] [button [ class "btn-lg btn-primary btn-block", onClick LowBat ] [ text "Low Battery" ]]
-    , div [class "row"] [button [ class "btn-lg btn-primary btn-block", onClick ZeroWeight ] [ text "Zero Weight" ]]
-    , div [class "row"] [button [ class "btn-lg btn-primary btn-block", onClick HighTemp ] [ text "High Temperature" ]]
-    , div [class "row"] [button [ class "btn-lg btn-danger btn-block", onClick Clear ] [ text "Clear" ]]
+checksView : Html Msg
+checksView =  div [class "container col-md-3"] [div []
+    [ div [class "row"] [input [ type' "checkbox", checked model.lowS ,onCheck LowSig ] [ ], text "Low Signal" ]
+    , div [class "row"] [input [ type' "checkbox", checked model.lowB ,onCheck LowBat ] [ ], text "Low Battery"]
+    , div [class "row"] [input [ type' "checkbox", checked model.zeroW ,onCheck ZeroWeight ] [], text "Zero Weight" ]
+    , div [class "row"] [input [ type' "checkbox", checked model.highT ,onCheck HighTemp ] [], text "High Temperature"]
+    , div [class "row"] [button [ class "btn-lg btn-danger", onClick Clear ] [ text "Clear" ]]
     ]]
 
-bottleMessageView : Html Msg
-bottleMessageView = div [class "h1"] [ text (String.concat [ model.firmware, ",", model.meid, ",", model.seqNum, ";", model.date, "-", model.time, ",", model.timeZone, ",", model.temp, ",", model.weight, ",", model.battery, ",", model.signal, ",", model.x, ",", model.y, ",", model.z ]) ]
+bottleMessageView : Model -> Html Msg
+bottleMessageView model =
+  div [class "h1 col-md-12 text-center"]
+  [ text (String.concat
+  [ model.firmware, ","
+  , model.something, ","
+  , model.meid, ","
+  , model.seqNum, ";"
+  , model.date, "-"
+  , model.time, ","
+  , model.timeZone, ","
+  , if model.highT then "112.0" else model.temp, ","
+  , if model.zeroW then "0" else model.weight, ","
+  , if model.lowB then "3.1" else model.battery, ","
+  , if model.lowS then "2" else model.signal, ","
+  , model.x, ","
+  , model.y, ","
+  , model.z ]) ]
+
+formView : Model -> Html Msg
+formView model =
+  let
+    firmView = div [class "text-center col-md-4"] [label [class "text-center"] [text "FirmWare"], div [] [input [value model.firmware] []]]
+
+    meidView = div [class "text-center col-md-4"] [label [class "text-center"] [text "FirmWare"], div [] [input [value model.meid][]]]
+
+    seqView =div [class "text-center col-md-4"] [label [class "text-center"] [text "Sequence Number"], div [] [input [value model.seqNum][]]]
+
+    dateView = div [class "text-center col-md-4"] [label [class "text-center"] [text "Date (mm/dd/yyyy)"], div [] [input [value model.date][]]]
+
+    timeView = div [class "text-center col-md-4"] [label [class "text-center"] [text "Time Of Date (hh:mm)"], div [] [input [ value model.time][]]]
+
+    zoneView = div [class "text-center col-md-4"] [label [class "text-center"] [text "TimeZone"], div [] [input [ value model.timeZone][]]]
+
+    tempView =div [class "text-center col-md-4"] [label [class "text-center"] [text "Temperature"], div [] [input [ value model.temp][]]]
+
+    weightView = div [class "text-center col-md-4"] [label [class "text-center"] [text "Weight"], div [] [input [ value model.weight][]]]
+
+    batteryView = div [class "text-center col-md-4"] [label [class "text-center"] [text "Battery"], div [] [input [ value model.battery][]]]
+
+    signalView =div [class "text-center col-md-12"] [label [class "text-center"] [text "Signal"], div [] [input [value model.signal][]]]
+
+    somethingView =div [class "text-center col-md-4"] [label [class "text-center"] [text "Something"], div [] [input [placeholder model.something, value model.something][]]]
+
+  in
+    div [class "row col-md-12"] [
+      Html.form [id "message-form"]
+      [ h1 [class "text-center"] [text "Message Form"]
+      , div [class "row"] [firmView, somethingView, meidView]
+      , div [class "row"] [seqView, dateView, timeView]
+      , div [class "row"] [tempView, weightView, batteryView]
+      , div [class "row text-center"] [signalView]
+      , div [class "row col-md-4 text-center"] [button [ class "btn-success"] [ text "Submit" ]]
+
+      ]
+    ]
