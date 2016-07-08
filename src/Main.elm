@@ -4,13 +4,18 @@ import Html exposing (..)
 import Html.App as Html
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import String
-import Date
-
+import String exposing (..)
+import Date exposing (..)
+import Date.Extra.Format as Format exposing(isoFormat)
+import Array exposing (..)
 
 main =
-    Html.beginnerProgram { model = model, view = view, update = update }
-
+  Html.program
+    { init = init
+    , view = view
+    , update = update
+    , subscriptions = subscriptions
+    }
 
 
 -- MODEL
@@ -20,14 +25,12 @@ type alias Model =
     { firmware : String
     , meid : String
     , seqNum : String
-    , date : String
-    , time : String
     , timeZone : String
     , temp : String
     , weight : String
     , battery : String
     , signal : String
-    , something : String
+    , messageType : String
     , x : String
     , y : String
     , z : String
@@ -35,37 +38,44 @@ type alias Model =
     , zeroW : Bool
     , lowB : Bool
     , lowS : Bool
-
+    , year : Maybe String
+    , day : Maybe String
+    , month : Maybe String
+    , theHour : Maybe String
+    , theMinute : Maybe String
+    , dateString : String
     }
 
 
-model : Model
-model =
-    { firmware = ""
-    , meid = ""
-    , seqNum = ""
-    , date = ""
-    , time = ""
-    , timeZone = ""
-    , temp = ""
-    , weight = ""
-    , battery = ""
-    , signal = ""
-    , something = "BR"
-    , x = "0"
-    , y = "0"
-    , z = "0"
-    , highT = False
-    , zeroW = False
-    , lowB = False
-    , lowS = False
-    }
-
-
+init : (Model, Cmd Msg)
+init =
+  (
+  { firmware = ""
+  , meid = ""
+  , seqNum = ""
+  , timeZone = ""
+  , temp = ""
+  , weight = ""
+  , battery = ""
+  , signal = ""
+  , messageType = ""
+  , x = "0"
+  , y = "0"
+  , z = "0"
+  , highT = False
+  , zeroW = False
+  , lowB = False
+  , lowS = False
+  , year =Just ""
+  , day = Just ""
+  , month = Just ""
+  , theHour = Just ""
+  , theMinute = Just ""
+  , dateString = ""
+  }
+  , Cmd.none)
 
 -- UPDATE
-
-
 type Msg
     = FirmWare String
     | Meid String
@@ -82,83 +92,62 @@ type Msg
     | LowBat Bool
     | ZeroWeight Bool
     | HighTemp Bool
-    | Something String
+    | MessageType String
+    | Submit
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
         FirmWare firm ->
-            { model | firmware = firm }
+            ({ model | firmware = firm }, Cmd.none)
 
         Meid meid ->
-            { model | meid = meid }
+            ({ model | meid = meid }, Cmd.none)
 
         SeqNum num ->
-            { model | seqNum = num }
+            ({ model | seqNum = num }, Cmd.none)
 
         Date date ->
-            { model | date = date }
+            (splitDate date model, Cmd.none)
 
         Time time ->
-            { model | time = time }
+            (splitTime time model , Cmd.none)
 
         TimeZone zone ->
-            { model | timeZone = zone }
+            ({ model | timeZone = zone }, Cmd.none)
 
         Temp temp ->
-            { model | temp = temp }
+            ({ model | temp = temp }, Cmd.none)
 
         Weight weight ->
-            { model | weight = weight }
+            ({ model | weight = weight }, Cmd.none)
 
         Battery battery ->
-            { model | battery = battery }
+           ({ model | battery = battery }, Cmd.none)
 
         Signal signal ->
-            { model | signal = signal }
-        Something s ->
-            { model | something = s}
+            ({ model | signal = signal }, Cmd.none)
+        MessageType messType ->
+            ({ model | messageType = messType}, Cmd.none)
 
         Clear ->
-            modelClear model
+            (modelClear model, Cmd.none)
 
         LowSig bool->
-            { model | lowS = bool }
+            ({ model | lowS = bool }, Cmd.none)
 
         LowBat bool->
-            { model | lowB = bool }
+            ({ model | lowB = bool }, Cmd.none)
 
         ZeroWeight bool->
-            { model | zeroW = bool }
+            ({ model | zeroW = bool }, Cmd.none)
 
         HighTemp bool->
-            { model | highT = bool }
+            ({ model | highT = bool }, Cmd.none)
 
-
-modelClear : Model -> Model
-modelClear _ =
-    { firmware = ""
-    , meid = ""
-    , seqNum = ""
-    , date = ""
-    , time = ""
-    , timeZone = ""
-    , temp = ""
-    , weight = ""
-    , battery = ""
-    , signal = ""
-    , something = "BR"
-    , x = "0"
-    , y = "0"
-    , z = "0"
-    , highT = False
-    , zeroW = False
-    , lowB = False
-    , lowS = False
-    }
-
-
+        Submit ->
+          ({model | dateString = getDateString model}, Cmd.none)
 
 -- VIEW
 
@@ -167,100 +156,159 @@ view : Model -> Html Msg
 view model =
     let
         firmView =
-            div [ class "col-md-4 text-center" ] [ text "FirmWare", div [] [input [ onInput FirmWare ] [] ] ]
+            div [ class "col-md-3 text-center" ] [ text "FirmWare", div [] [input [ onInput FirmWare] [] ] ]
         meidView =
-            div [ class "col-md-4 text-center" ] [ text "Meid", div [] [input [ onInput Meid ] []] ]
+            div [ class "col-md-3 text-center" ] [ text "Meid", div [] [input [ onInput Meid ] []] ]
         seqView =
-            div [ class "col-md-4 text-center" ] [ text "Sequence Number", div [] [input [ onInput SeqNum ] []] ]
+            div [ class "col-md-3 text-center" ] [ text "Sequence Number", div [] [input [ onInput SeqNum ] []] ]
         dateView =
-            div [ class "col-md-4 text-center" ] [ text "Date", div [] [ input [ onInput Date ] [] ] ]
+            div [ class "col-md-3 text-center" ] [ text "Date", div [] [ input [ onInput Date ] [] ] ]
         timeView =
-            div [ class "col-md-4 text-center" ] [ text "Time of Day(hh:mm)", div [] [ input [ onInput Time ] [] ] ]
+            div [ class "col-md-3 text-center" ] [ text "Time of Day(hh:mm)", div [] [ input [ onInput Time ] [] ] ]
         zoneView =
-            div [ class "col-md-4 text-center" ] [ text "TimeZone", div [] [input [ onInput TimeZone ][] ] ]
+            div [ class "col-md-3 text-center" ] [ text "TimeZone((+/-)hh:mm)", div [] [input [ onInput TimeZone ][] ] ]
         tempView =
-            div [ class "col-md-4 text-center" ] [ text "Temp", div [] [input [ onInput Temp ] [] ] ]
+            div [ class "col-md-3 text-center" ] [ text "Temp", div [] [input [ onInput Temp, value model.temp ] [] ] ]
         weightView =
-            div [ class "col-md-4 text-center" ] [ text "Weight", div [] [input [ onInput Weight ] [] ] ]
+            div [ class "col-md-3 text-center" ] [ text "Weight", div [] [input [ onInput Weight,value model.weight ] [] ] ]
         batteryView =
-            div [ class "col-md-4 text-center" ] [ text "Battery", div [] [input [ onInput Battery ][] ]  ]
+            div [ class "col-md-3 text-center" ] [ text "Battery", div [] [input [ onInput Battery, value model.battery ][] ]  ]
         signalView =
-            div [ class "col-md-4 text-center" ] [ text "Signal", div [] [input [ onInput Signal ] [] ] ]
-        somethingView =
-            div [ class "col-md-4 text-center"]  [ text "BR", div [] [input [onInput Something ] []] ]
+            div [ class "col-md-3 text-center" ] [ text "Signal", div [] [input [ onInput Signal ,value model.signal ] [] ] ]
+        messTypeView =
+            div [ class "col-md-3 text-center"]  [ text "Message Type", div [] [input [onInput MessageType ] []] ]
     in
         div [ class "container" ]
-            [ div [class "row smrxtHeader text-center span-block"] [text "SMRxT Bottle Message Tool"],  div [class "container col-md-9"] [div [ class "row" ] [ firmView, meidView, seqView ]
-            , div [ class "row" ] [ dateView, timeView, zoneView ]
-            , div [class "row " ] [ tempView, weightView, batteryView ]
-            , div [ class "row " ] [ signalView, somethingView ]
+            [ div [class "row smrxtHeader text-center span-block"] [text "SMRxT Bottle Message Tool"],  div [class "container col-md-12"] [div [ class "row" ] [ firmView, messTypeView ,meidView, seqView ]
+            , div [ class "row" ] [  dateView, timeView, zoneView, tempView ]
+            , div [class "row " ] [  weightView, batteryView, signalView ]
             , bottleMessageView model]
-            , checksView
-            , formView model
+            , checksView model
+            , div [class "col-md-9"] [ button [class "btn-lg btn-success", onClick Submit] [ text "SUBMIT"],button [ class "btn-lg btn-danger", onClick Clear ] [ text "Clear" ]]
             ]
 
-checksView : Html Msg
-checksView =  div [class "container col-md-3"] [div []
+checksView : Model -> Html Msg
+checksView model =  div [class "col-md-3"] [div []
     [ div [class "row"] [input [ type' "checkbox", checked model.lowS ,onCheck LowSig ] [ ], text "Low Signal" ]
     , div [class "row"] [input [ type' "checkbox", checked model.lowB ,onCheck LowBat ] [ ], text "Low Battery"]
     , div [class "row"] [input [ type' "checkbox", checked model.zeroW ,onCheck ZeroWeight ] [], text "Zero Weight" ]
     , div [class "row"] [input [ type' "checkbox", checked model.highT ,onCheck HighTemp ] [], text "High Temperature"]
-    , div [class "row"] [button [ class "btn-lg btn-danger", onClick Clear ] [ text "Clear" ]]
     ]]
 
 bottleMessageView : Model -> Html Msg
 bottleMessageView model =
   div [class "h1 col-md-12 text-center"]
-  [ text (String.concat
-  [ model.firmware, ","
-  , model.something, ","
-  , model.meid, ","
-  , model.seqNum, ";"
-  , model.date, "-"
-  , model.time, ","
-  , model.timeZone, ","
-  , if model.highT then "112.0" else model.temp, ","
-  , if model.zeroW then "0" else model.weight, ","
-  , if model.lowB then "3.1" else model.battery, ","
-  , if model.lowS then "2" else model.signal, ","
-  , model.x, ","
-  , model.y, ","
-  , model.z ]) ]
+    [ text (String.concat
+    [ model.firmware, ","
+    , model.messageType, ","
+    , model.meid, ","
+    , model.seqNum, ";"
+    , case model.year of
+        Just year -> year
+        Nothing -> "there is nothing"
+      , "-"
+    , case model.month of
+        Just month -> month
+        Nothing -> "nothing son"
+    , "-"
+    ,case model.day of
+        Just day -> day
+        Nothing -> "nothing suhsonboi"
+    , "T"
+    , case model.theHour of
+        Just theHour -> theHour
+        Nothing -> "nothing sonholo"
+    , ":"
+    , case model.theMinute of
+        Just theMinute -> theMinute
+        Nothing -> "nothing sonmin"
+    , ","
+    , model.timeZone, ","
+    , if model.highT then "112.0" else model.temp, ","
+    , if model.zeroW then "0" else model.weight, ","
+    , if model.lowB then "3.1" else model.battery, ","
+    , if model.lowS then "2" else model.signal, ","
+    , model.x, ","
+    , model.y, ","
+    , model.z ]) ]
 
-formView : Model -> Html Msg
-formView model =
+--subscriptions
+subscriptions : Model -> Sub Msg
+subscriptions model =
+  Sub.none
+
+--helper functions
+splitTime : String -> Model -> Model
+splitTime time model =
   let
-    firmView = div [class "text-center col-md-4"] [label [class "text-center"] [text "FirmWare"], div [] [input [value model.firmware] []]]
-
-    meidView = div [class "text-center col-md-4"] [label [class "text-center"] [text "FirmWare"], div [] [input [value model.meid][]]]
-
-    seqView =div [class "text-center col-md-4"] [label [class "text-center"] [text "Sequence Number"], div [] [input [value model.seqNum][]]]
-
-    dateView = div [class "text-center col-md-4"] [label [class "text-center"] [text "Date (mm/dd/yyyy)"], div [] [input [value model.date][]]]
-
-    timeView = div [class "text-center col-md-4"] [label [class "text-center"] [text "Time Of Date (hh:mm)"], div [] [input [ value model.time][]]]
-
-    zoneView = div [class "text-center col-md-4"] [label [class "text-center"] [text "TimeZone"], div [] [input [ value model.timeZone][]]]
-
-    tempView =div [class "text-center col-md-4"] [label [class "text-center"] [text "Temperature"], div [] [input [ value model.temp][]]]
-
-    weightView = div [class "text-center col-md-4"] [label [class "text-center"] [text "Weight"], div [] [input [ value model.weight][]]]
-
-    batteryView = div [class "text-center col-md-4"] [label [class "text-center"] [text "Battery"], div [] [input [ value model.battery][]]]
-
-    signalView =div [class "text-center col-md-12"] [label [class "text-center"] [text "Signal"], div [] [input [value model.signal][]]]
-
-    somethingView =div [class "text-center col-md-4"] [label [class "text-center"] [text "Something"], div [] [input [placeholder model.something, value model.something][]]]
-
+    listTime = Array.fromList (split ":" time)
   in
-    div [class "row col-md-12"] [
-      Html.form [id "message-form"]
-      [ h1 [class "text-center"] [text "Message Form"]
-      , div [class "row"] [firmView, somethingView, meidView]
-      , div [class "row"] [seqView, dateView, timeView]
-      , div [class "row"] [tempView, weightView, batteryView]
-      , div [class "row text-center"] [signalView]
-      , div [class "row col-md-4 text-center"] [button [ class "btn-success"] [ text "Submit" ]]
+     { model
+         | theHour = Array.get 0 listTime
+         , theMinute = Array.get 1 listTime
+     }
 
-      ]
-    ]
+
+splitDate : String -> Model -> Model
+splitDate date model =
+    let
+      listDate = Array.fromList (split "/" date)
+    in
+    { model
+        | year = Array.get 2 listDate
+        , day = Array.get 1 listDate
+        , month = Array.get 0 listDate
+    }
+
+modelClear : Model -> Model
+modelClear _ =
+    { firmware = ""
+    , meid = ""
+    , seqNum = ""
+    , timeZone = ""
+    , temp = ""
+    , weight = ""
+    , battery = ""
+    , signal = ""
+    , messageType = ""
+    , x = "0"
+    , y = "0"
+    , z = "0"
+    , highT = False
+    , zeroW = False
+    , lowB = False
+    , lowS = False
+    , year = Just ""
+    , day = Just ""
+    , month =Just  ""
+    , theHour = Just ""
+    , theMinute = Just ""
+    , dateString = ""
+    }
+
+getDateString : Model -> String
+getDateString model =
+  String.concat
+  [
+    case model.year of
+        Just year -> year
+        Nothing -> "there is nothing"
+      , "-"
+    , case model.month of
+        Just month -> month
+        Nothing -> "nothing son"
+    , "-"
+    ,case model.day of
+        Just day -> day
+        Nothing -> "nothing suhsonboi"
+    , "T"
+    , case model.theHour of
+        Just theHour -> theHour
+        Nothing -> "nothing sonholo"
+    , ":"
+    , case model.theMinute of
+        Just theMinute -> theMinute
+        Nothing -> "nothing sonmin"
+    , ","
+    , model.timeZone
+  ]
