@@ -5,9 +5,12 @@ import Html.App as Html
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import String exposing (..)
+import Http exposing (..)
 import Date exposing (..)
 import Date.Extra.Format as Format exposing(isoFormat)
 import Array exposing (..)
+import Json.Decode as Json exposing (..)
+import Task
 
 main =
   Html.program
@@ -94,6 +97,9 @@ type Msg
     | HighTemp Bool
     | MessageType String
     | Submit
+    | PostSucceed String
+    | PostFail Http.Error
+
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -156,44 +162,44 @@ view : Model -> Html Msg
 view model =
     let
         firmView =
-            div [ class "col-md-3 text-center" ] [ text "FirmWare", div [] [input [ onInput FirmWare] [] ] ]
+            div [ class "col-md-3 text-center lead" ] [ text "FirmWare", div [] [input [ onInput FirmWare] [] ] ]
         meidView =
-            div [ class "col-md-3 text-center" ] [ text "Meid", div [] [input [ onInput Meid ] []] ]
+            div [ class "col-md-3 text-center lead" ] [ text "Meid", div [] [input [ onInput Meid ] []] ]
         seqView =
-            div [ class "col-md-3 text-center" ] [ text "Sequence Number", div [] [input [ onInput SeqNum ] []] ]
+            div [ class "col-md-3 text-center lead" ] [ text "Sequence Number", div [] [input [ onInput SeqNum ] []] ]
         dateView =
-            div [ class "col-md-3 text-center" ] [ text "Date", div [] [ input [ onInput Date ] [] ] ]
+            div [ class "col-md-3 text-center lead" ] [ text "Date", div [] [ input [ onInput Date ] [] ] ]
         timeView =
-            div [ class "col-md-3 text-center" ] [ text "Time of Day(hh:mm)", div [] [ input [ onInput Time ] [] ] ]
+            div [ class "col-md-3 text-center lead" ] [ text "Time of Day(hh:mm)", div [] [ input [ onInput Time ] [] ] ]
         zoneView =
-            div [ class "col-md-3 text-center" ] [ text "TimeZone((+/-)hh:mm)", div [] [input [ onInput TimeZone ][] ] ]
+            div [ class "col-md-3 text-center lead" ] [ text "TimeZone((+/-)hh:mm)", div [] [input [ onInput TimeZone ][] ] ]
         tempView =
-            div [ class "col-md-3 text-center" ] [ text "Temp", div [] [input [ onInput Temp, value model.temp ] [] ] ]
+            div [ class "col-md-3 text-center lead" ] [ text "Temp", div [] [input [ onInput Temp ] [] ] ]
         weightView =
-            div [ class "col-md-3 text-center" ] [ text "Weight", div [] [input [ onInput Weight,value model.weight ] [] ] ]
+            div [ class "col-md-3 text-center lead" ] [ text "Weight", div [] [input [ onInput Weight ] [] ] ]
         batteryView =
-            div [ class "col-md-3 text-center" ] [ text "Battery", div [] [input [ onInput Battery, value model.battery ][] ]  ]
+            div [ class "col-md-3 text-center lead" ] [ text "Battery", div [] [input [ onInput Battery ][] ]  ]
         signalView =
-            div [ class "col-md-3 text-center" ] [ text "Signal", div [] [input [ onInput Signal ,value model.signal ] [] ] ]
+            div [ class "col-md-3 text-center lead" ] [ text "Signal", div [] [input [ onInput Signal ] [] ] ]
         messTypeView =
-            div [ class "col-md-3 text-center"]  [ text "Message Type", div [] [input [onInput MessageType ] []] ]
+            div [ class "col-md-3 text-center lead"]  [ text "Message Type", div [] [input [onInput MessageType ] []] ]
     in
         div [ class "container" ]
-            [ div [class "row smrxtHeader text-center span-block"] [text "SMRxT Bottle Message Tool"],  div [class "container col-md-12"] [div [ class "row" ] [ firmView, messTypeView ,meidView, seqView ]
+            [ div [class "row text-center "] [img [src "img/BMTHeader.png"] []],  div [class "container col-md-12"] [div [ class "row" ] [ firmView, messTypeView ,meidView, seqView ]
             , div [ class "row" ] [  dateView, timeView, zoneView, tempView ]
             , div [class "row " ] [  weightView, batteryView, signalView ]
             , bottleMessageView model]
             , checksView model
-            , div [class "col-md-9"] [ button [class "btn-lg btn-success", onClick Submit] [ text "SUBMIT"],button [ class "btn-lg btn-danger", onClick Clear ] [ text "Clear" ]]
+            , div [class "col-md-12 text-center"] [ button [class "btn-lg btn-success active", onClick Submit] [ text "SUBMIT"],button [ class "btn-lg btn-danger active", onClick Clear ] [ text "Clear" ]]
             ]
 
 checksView : Model -> Html Msg
-checksView model =  div [class "col-md-3"] [div []
-    [ div [class "row"] [input [ type' "checkbox", checked model.lowS ,onCheck LowSig ] [ ], text "Low Signal" ]
-    , div [class "row"] [input [ type' "checkbox", checked model.lowB ,onCheck LowBat ] [ ], text "Low Battery"]
-    , div [class "row"] [input [ type' "checkbox", checked model.zeroW ,onCheck ZeroWeight ] [], text "Zero Weight" ]
-    , div [class "row"] [input [ type' "checkbox", checked model.highT ,onCheck HighTemp ] [], text "High Temperature"]
-    ]]
+checksView model =  div [class "col-md-12 text-center"] [div []
+    [ ul [class "list-inline"]
+    [  li [class "list-inline-item"] [div [] [label [class "btn btn-primary active"] [input [ type' "checkbox", checked model.lowS ,onCheck LowSig ] [ ], text "Low Signal" ]]]
+    , li [class "list-inline-item"] [div [] [label [class "btn btn-primary active"] [input [ type' "checkbox", checked model.lowB ,onCheck LowBat ] [ ], text "Low Battery"]]]
+    , li [class "list-inline-item"] [div [] [label [class "btn btn-primary active"] [input [ type' "checkbox", checked model.zeroW ,onCheck ZeroWeight ] [], text "Zero Weight" ]]]
+    , li [class "list-inline-item"] [div [] [label [class "btn btn-primary active"] [input [ type' "checkbox", checked model.highT ,onCheck HighTemp ] [], text "High Temperature"]]]]]]
 
 bottleMessageView : Model -> Html Msg
 bottleMessageView model =
@@ -312,3 +318,12 @@ getDateString model =
     , ","
     , model.timeZone
   ]
+
+
+--requests
+postRequest : String -> Cmd Msg
+postRequest message =
+  let
+    url = "http://requestb.in/1a3j0jo1"
+  in
+    Task.perform PostFail PostSucceed (Http.post (Json "message") url Http.empty)
