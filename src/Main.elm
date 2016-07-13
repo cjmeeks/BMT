@@ -5,7 +5,7 @@ import Html.App as Html
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import String exposing (..)
-import Http exposing (..)
+import Http as HT exposing (..)
 import Date exposing (..)
 import Date.Extra.Format as Format exposing(isoFormat)
 import Array exposing (..)
@@ -98,7 +98,7 @@ type Msg
     | MessageType String
     | Submit
     | PostSucceed String
-    | PostFail Http.Error
+    | PostFail HT.Error
 
 
 
@@ -153,7 +153,13 @@ update msg model =
             ({ model | highT = bool }, Cmd.none)
 
         Submit ->
-          ({model | dateString = getDateString model}, Cmd.none)
+          ({model | dateString = getDateString model}, postRequest)
+
+        PostSucceed success->
+          (model, Cmd.none)
+        PostFail error ->
+          (model, Cmd.none)
+
 
 -- VIEW
 
@@ -321,9 +327,9 @@ getDateString model =
 
 
 --requests
-postRequest : String -> Cmd Msg
-postRequest message =
+postRequest : Cmd Msg
+postRequest =
   let
-    url = "http://requestb.in/1a3j0jo1"
+    url = "http://requestb.in/s71qs0s7"
   in
-    Task.perform PostFail PostSucceed (Http.post (Json "message") url Http.empty)
+    Task.perform PostFail PostSucceed (HT.post (Json.succeed "True") url HT.empty )
