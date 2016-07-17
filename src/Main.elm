@@ -9,7 +9,7 @@ import Http as HT exposing (..)
 import Date exposing (..)
 import Date.Extra.Format as Format exposing(isoFormat)
 import Array exposing (..)
-import Json.Decode as Json exposing (..)
+import Json.Decode as Json exposing (succeed, object3, string)
 import Task
 
 main =
@@ -47,7 +47,10 @@ type alias Model =
     , theHour : Maybe String
     , theMinute : Maybe String
     , dateString : String
+    , getData : String
+    , failData : Maybe HT.Error
     }
+
 
 
 init : (Model, Cmd Msg)
@@ -69,12 +72,14 @@ init =
   , zeroW = False
   , lowB = False
   , lowS = False
-  , year =Just ""
-  , day = Just ""
-  , month = Just ""
-  , theHour = Just ""
-  , theMinute = Just ""
+  , year = Nothing
+  , day =  Nothing
+  , month =  Nothing
+  , theHour =  Nothing
+  , theMinute = Nothing
   , dateString = ""
+  , getData = ""
+  , failData = Nothing
   }
   , Cmd.none)
 
@@ -99,8 +104,8 @@ type Msg
     | Submit
     | PostSucceed String
     | PostFail HT.Error
-
-
+    | PostRequest
+    | GetRequest
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -138,7 +143,7 @@ update msg model =
             ({ model | messageType = messType}, Cmd.none)
 
         Clear ->
-            (modelClear model, Cmd.none)
+            init
 
         LowSig bool->
             ({ model | lowS = bool }, Cmd.none)
@@ -153,12 +158,25 @@ update msg model =
             ({ model | highT = bool }, Cmd.none)
 
         Submit ->
-          ({model | dateString = getDateString model}, postRequest)
+          (model , submitData {model | dateString = getDateString model})
 
         PostSucceed success->
-          (model, Cmd.none)
+          ({model | getData = success}, Cmd.none)
+
         PostFail error ->
-          (model, Cmd.none)
+          (case error of
+            Timeout -> {model | z = "Timeout"}
+            NetworkError -> {model | z =" NetworkError"}
+            UnexpectedPayload payload -> {model | z = payload}
+            BadResponse number response -> {model | y =  toString number
+                                                  ,  z = response}
+          , Cmd.none)
+
+        PostRequest ->
+            (model, postRequest "yo" "lo")
+
+        GetRequest ->
+            (model, getRequest)
 
 
 -- VIEW
@@ -176,7 +194,7 @@ view model =
         dateView =
             div [ class "col-md-3 text-center lead" ] [ text "Date", div [] [ input [ onInput Date ] [] ] ]
         timeView =
-            div [ class "col-md-3 text-center lead" ] [ text "Time of Day(hh:mm)", div [] [ input [ onInput Time ] [] ] ]
+            div [ class "col-md-3 text-center" ] [ text "Time of Day(hh:mm-(24 Hour))", div [] [ input [ onInput Time ] [] ] ]
         zoneView =
             div [ class "col-md-3 text-center lead" ] [ text "TimeZone((+/-)hh:mm)", div [] [input [ onInput TimeZone ][] ] ]
         tempView =
@@ -196,7 +214,7 @@ view model =
             , div [class "row " ] [  weightView, batteryView, signalView ]
             , bottleMessageView model]
             , checksView model
-            , div [class "col-md-12 text-center"] [ button [class "btn-lg btn-success active", onClick Submit] [ text "SUBMIT"],button [ class "btn-lg btn-danger active", onClick Clear ] [ text "Clear" ]]
+            , div [class "col-md-12 text-center"] [ button [class "btn-lg btn-success active", onClick Submit] [ text "SUBMIT"],button [ class "btn-lg btn-danger active", onClick Clear ] [ text "Clear" ],button [ class "btn-lg btn-default active", onClick PostRequest ] [ text "Post" ], button [ class "btn-lg btn-default active", onClick GetRequest ] [ text "Get" ]]
             ]
 
 checksView : Model -> Html Msg
@@ -217,23 +235,23 @@ bottleMessageView model =
     , model.seqNum, ";"
     , case model.year of
         Just year -> year
-        Nothing -> "there is nothing"
+        Nothing -> ""
       , "-"
     , case model.month of
         Just month -> month
-        Nothing -> "nothing son"
+        Nothing -> ""
     , "-"
     ,case model.day of
         Just day -> day
-        Nothing -> "nothing suhsonboi"
+        Nothing -> ""
     , "T"
     , case model.theHour of
         Just theHour -> theHour
-        Nothing -> "nothing sonholo"
+        Nothing -> ""
     , ":"
     , case model.theMinute of
         Just theMinute -> theMinute
-        Nothing -> "nothing sonmin"
+        Nothing -> ""
     , ","
     , model.timeZone, ","
     , if model.highT then "112.0" else model.temp, ","
@@ -242,7 +260,8 @@ bottleMessageView model =
     , if model.lowS then "2" else model.signal, ","
     , model.x, ","
     , model.y, ","
-    , model.z ]) ]
+    , model.z
+    ,model.getData ]) ]
 
 --subscriptions
 subscriptions : Model -> Sub Msg
@@ -270,32 +289,6 @@ splitDate date model =
         | year = Array.get 2 listDate
         , day = Array.get 1 listDate
         , month = Array.get 0 listDate
-    }
-
-modelClear : Model -> Model
-modelClear _ =
-    { firmware = ""
-    , meid = ""
-    , seqNum = ""
-    , timeZone = ""
-    , temp = ""
-    , weight = ""
-    , battery = ""
-    , signal = ""
-    , messageType = ""
-    , x = "0"
-    , y = "0"
-    , z = "0"
-    , highT = False
-    , zeroW = False
-    , lowB = False
-    , lowS = False
-    , year = Just ""
-    , day = Just ""
-    , month =Just  ""
-    , theHour = Just ""
-    , theMinute = Just ""
-    , dateString = ""
     }
 
 getDateString : Model -> String
@@ -327,9 +320,34 @@ getDateString model =
 
 
 --requests
-postRequest : Cmd Msg
-postRequest =
+postRequest : String -> String -> Cmd Msg
+postRequest username password =
   let
-    url = "http://requestb.in/s71qs0s7"
+    url = "http://localhost:3000"
+    body =
+      HT.multipart
+        [ HT.stringData "user" username
+        , HT.stringData "password" password
+        ]
   in
-    Task.perform PostFail PostSucceed (HT.post (Json.succeed "True") url HT.empty )
+    Task.perform PostFail PostSucceed (HT.post testDecoder url HT.empty)
+
+getRequest : Cmd Msg
+getRequest =
+  let
+    url = "http://localhost:3000"
+  in
+    Task.perform PostFail PostSucceed (HT.get testDecoder url)
+
+
+submitData : Model -> Cmd Msg
+submitData model =
+  let
+    url = "http://localhost:3000"
+    body =
+      HT.multipart [ HT.stringData "data" model.dateString ]
+  in
+    Task.perform PostFail PostSucceed (HT.post testDecoder url body)
+
+testDecoder : Json.Decoder String
+testDecoder = Json.string
