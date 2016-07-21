@@ -9,7 +9,7 @@ import Http as HT exposing (..)
 import Date exposing (..)
 import Date.Extra.Format as Format exposing(isoFormat)
 import Array exposing (..)
-import Json.Decode as Json exposing (succeed, object3, string)
+import Json.Decode as Json exposing ((:=), object2, string, int, Decoder)
 import Task
 
 main =
@@ -23,7 +23,13 @@ main =
 
 -- MODEL
 
+type alias Item =
+  {message : String}
 
+type alias Item2 = {
+  name: String
+  , job : String
+}
 type alias Model =
     { firmware : String
     , meid : String
@@ -102,7 +108,7 @@ type Msg
     | HighTemp Bool
     | MessageType String
     | Submit
-    | PostSucceed String
+    | PostSucceed Item
     | PostFail HT.Error
     | PostRequest
     | GetRequest
@@ -161,7 +167,7 @@ update msg model =
           (model , submitData {model | dateString = getDateString model})
 
         PostSucceed success->
-          ({model | getData = success}, Cmd.none)
+          ({model | getData = success.message}, Cmd.none)
 
         PostFail error ->
           (case error of
@@ -212,10 +218,10 @@ view model =
             [ div [class "row text-center "] [img [src "img/BMTHeader.png"] []],  div [class "container col-md-12"] [div [ class "row" ] [ firmView, messTypeView ,meidView, seqView ]
             , div [ class "row" ] [  dateView, timeView, zoneView, tempView ]
             , div [class "row " ] [  weightView, batteryView, signalView ]
-            , bottleMessageView model]
+            , div[class "row col-md-12 text-center lead h1"][text (bottleMessage model)]
             , checksView model
-            , div [class "col-md-12 text-center"] [ button [class "btn-lg btn-success active", onClick Submit] [ text "SUBMIT"],button [ class "btn-lg btn-danger active", onClick Clear ] [ text "Clear" ],button [ class "btn-lg btn-default active", onClick PostRequest ] [ text "Post" ], button [ class "btn-lg btn-default active", onClick GetRequest ] [ text "Get" ]]
-            ]
+            , div [class "col-md-12 text-center "] [ button [class "btn-lg btn-success active", onClick Submit] [ text "SUBMIT"],button [ class "btn-lg btn-danger active", onClick Clear ] [ text "Clear" ],button [ class "btn-lg btn-default active", onClick PostRequest ] [ text "Post" ], button [ class "btn-lg btn-default active", onClick GetRequest ] [ text "Get" ]]]]
+
 
 checksView : Model -> Html Msg
 checksView model =  div [class "col-md-12 text-center"] [div []
@@ -225,14 +231,9 @@ checksView model =  div [class "col-md-12 text-center"] [div []
     , li [class "list-inline-item"] [div [] [label [class "btn btn-primary active"] [input [ type' "checkbox", checked model.zeroW ,onCheck ZeroWeight ] [], text "Zero Weight" ]]]
     , li [class "list-inline-item"] [div [] [label [class "btn btn-primary active"] [input [ type' "checkbox", checked model.highT ,onCheck HighTemp ] [], text "High Temperature"]]]]]]
 
-bottleMessageView : Model -> Html Msg
-bottleMessageView model =
-  div [class "h1 col-md-12 text-center"]
-    [ text (String.concat
-    [ model.firmware, ","
-    , model.messageType, ","
-    , model.meid, ","
-    , model.seqNum, ";"
+bottleMessage : Model -> String
+bottleMessage model =
+   String.concat[model.firmware, ",", model.messageType, ",", model.meid, ",", model.seqNum, ";"
     , case model.year of
         Just year -> year
         Nothing -> ""
@@ -252,7 +253,6 @@ bottleMessageView model =
     , case model.theMinute of
         Just theMinute -> theMinute
         Nothing -> ""
-    , ","
     , model.timeZone, ","
     , if model.highT then "112.0" else model.temp, ","
     , if model.zeroW then "0" else model.weight, ","
@@ -261,7 +261,7 @@ bottleMessageView model =
     , model.x, ","
     , model.y, ","
     , model.z
-    ,model.getData ]) ]
+    ,model.getData]
 
 --subscriptions
 subscriptions : Model -> Sub Msg
@@ -297,23 +297,23 @@ getDateString model =
   [
     case model.year of
         Just year -> year
-        Nothing -> "there is nothing"
+        Nothing -> "Year"
       , "-"
     , case model.month of
         Just month -> month
-        Nothing -> "nothing son"
+        Nothing -> "Month"
     , "-"
     ,case model.day of
         Just day -> day
-        Nothing -> "nothing suhsonboi"
+        Nothing -> "Day"
     , "T"
     , case model.theHour of
         Just theHour -> theHour
-        Nothing -> "nothing sonholo"
+        Nothing -> "Hour"
     , ":"
     , case model.theMinute of
         Just theMinute -> theMinute
-        Nothing -> "nothing sonmin"
+        Nothing -> "Minute"
     , ","
     , model.timeZone
   ]
@@ -323,31 +323,38 @@ getDateString model =
 postRequest : String -> String -> Cmd Msg
 postRequest username password =
   let
-    url = "http://localhost:3000"
+    url = "http://localhost:8081"
     body =
       HT.multipart
         [ HT.stringData "user" username
         , HT.stringData "password" password
         ]
   in
-    Task.perform PostFail PostSucceed (HT.post testDecoder url HT.empty)
+    Task.perform PostFail PostSucceed (HT.post postDecoder url body)
 
 getRequest : Cmd Msg
 getRequest =
   let
-    url = "http://localhost:3000"
+    url = "http://localhost:8081"
   in
-    Task.perform PostFail PostSucceed (HT.get testDecoder url)
+    Task.perform PostFail PostSucceed (HT.get postDecoder url)
 
 
 submitData : Model -> Cmd Msg
 submitData model =
   let
-    url = "http://localhost:3000"
+    url = "http://localhost:8081"
     body =
-      HT.multipart [ HT.stringData "data" model.dateString ]
+      HT.multipart [ HT.stringData "message" (bottleMessage model) ]
   in
-    Task.perform PostFail PostSucceed (HT.post testDecoder url body)
+    Task.perform PostFail PostSucceed (HT.post postDecoder url body)
 
-testDecoder : Json.Decoder String
-testDecoder = Json.string
+postDecoder : Decoder Item
+postDecoder =
+  Json.object1 Item
+    ("message" := Json.string )
+{-getDecoder : Decoder Item2
+getDecoder =
+    Json.object2 Item Item
+    ("name" := Json.string,
+      "job" := Json.string)-}
