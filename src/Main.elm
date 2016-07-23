@@ -9,7 +9,8 @@ import Http as HT exposing (..)
 import Date exposing (..)
 import Date.Extra.Format as Format exposing(isoFormat)
 import Array exposing (..)
-import Json.Decode as Json exposing ((:=), object2, string, int, Decoder)
+import Json.Decode as Decode exposing ((:=), object2, string, int, Decoder)
+import Json.Encode as Encode exposing (object, encode, string, Value)
 import Task
 
 main =
@@ -23,13 +24,8 @@ main =
 
 -- MODEL
 
-type alias Item =
-  {message : String}
+type alias Item = String
 
-type alias Item2 = {
-  name: String
-  , job : String
-}
 type alias Model =
     { firmware : String
     , meid : String
@@ -57,7 +53,7 @@ type alias Model =
     , failData : Maybe HT.Error
     }
 
-
+type JSON object = Object
 
 init : (Model, Cmd Msg)
 init =
@@ -167,7 +163,7 @@ update msg model =
           (model , submitData {model | dateString = getDateString model})
 
         PostSucceed success->
-          ({model | getData = success.message}, Cmd.none)
+          ({model | getData = success}, Cmd.none)
 
         PostFail error ->
           (case error of
@@ -182,7 +178,7 @@ update msg model =
             (model, postRequest "yo" "lo")
 
         GetRequest ->
-            (model, getRequest)
+            (model, Cmd.none)
 
 
 -- VIEW
@@ -318,7 +314,11 @@ getDateString model =
     , model.timeZone
   ]
 
-
+getjsonMessage : Model -> Encode.Value
+getjsonMessage model =
+  Encode.object
+    [ ("message" , Encode.string (bottleMessage model))
+    ]
 --requests
 postRequest : String -> String -> Cmd Msg
 postRequest username password =
@@ -332,27 +332,29 @@ postRequest username password =
   in
     Task.perform PostFail PostSucceed (HT.post postDecoder url body)
 
-getRequest : Cmd Msg
-getRequest =
-  let
-    url = "http://localhost:8081"
-  in
-    Task.perform PostFail PostSucceed (HT.get postDecoder url)
-
 
 submitData : Model -> Cmd Msg
 submitData model =
   let
     url = "http://localhost:8081"
-    body =
-      HT.multipart [ HT.stringData "message" (bottleMessage model) ]
+    message = (Encode.encode 0 (getjsonMessage model))
+    body = HT.string message
+
   in
     Task.perform PostFail PostSucceed (HT.post postDecoder url body)
 
-postDecoder : Decoder Item
-postDecoder =
-  Json.object1 Item
-    ("message" := Json.string )
+postDecoder : Decoder String
+postDecoder = Decode.string
+
+submitMessage : Model -> Cmd Msg
+submitMessage model =
+  let
+    url = "http://localhost:8081"
+    message = message = (Encode.encode 0 (getjsonMessage model))
+    body = HT.string message
+  in
+    Task.perform PostFail PostSucceed (HT.send Ht.defaultSettings )
+
 {-getDecoder : Decoder Item2
 getDecoder =
     Json.object2 Item Item
