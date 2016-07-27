@@ -26,9 +26,12 @@ app.post('/', function (req, res) {
   })
   req.on('end', function(){
     console.log("in insert")
-
-    insert(req, res, JSON.parse(body).message, function(err, result){
-      res.write(JSON.stringify(result))
+    var message = JSON.parse(body).message
+    insert(req, res, message, function(err, result){
+      if(err){
+        console.log(err)
+        res.end("Error")
+      }
       res.end()
     });
   })
@@ -48,12 +51,9 @@ var insert = function(req,res, message, callback){
          console.log(err);
      }
   })
-  //var message = req.body.message
-  //client.query("DROP TABLE IF EXISTS test")
   client.query("CREATE TABLE IF NOT EXISTS test (message varchar(64))")
   client.query("INSERT INTO test(message) VALUES($1);", [message], function (err, result)  {
-    //console.log(err)
-    console.log(result)
+    console.log(err)
     callback(err, result)
   })
 }
