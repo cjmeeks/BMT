@@ -1,7 +1,8 @@
 module Update exposing (..)
 
 import Model exposing (Model, Item, Msg)
-import Util exposing (splitTime, splitDate, submitData, getDateString, postRequest, init)
+import Util exposing (splitTime, splitDate, submitData, getDateString, postRequest, init, convertToUnixTime)
+import ISO8601 as Date exposing(..)
 
 import Http exposing (..)
 
@@ -56,7 +57,8 @@ update msg model =
             ({ model | highT = bool }, Cmd.none)
 
         Model.Submit ->
-          (model , submitData {model | dateString = getDateString model})
+          (model , submitData {model | dateString = Date.fromString (getDateString model)
+                                     , unixTime = convertToUnixTime model.dateString})
 
         Model.PostSucceed success->
           (model, Cmd.none)
@@ -66,6 +68,6 @@ update msg model =
             Timeout -> {model | z = "Timeout"}
             NetworkError -> {model | z =" NetworkError"}
             UnexpectedPayload payload -> {model | responseData = "Post delivered"}
-            BadResponse number response -> {model |  responseNumber =  toString number
+            BadResponse number response -> {model |  responseNumber =  Basics.toString number
                                                   ,  responseData = response}
           , Cmd.none)

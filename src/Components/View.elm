@@ -6,6 +6,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import String exposing (..)
+import ISO8601 as Date exposing(..)
 
 
 
@@ -41,8 +42,11 @@ view model =
             , div [class "row " ] [  weightView, batteryView, signalView ]
             , div [ class "row col-md-12 text-center lead " ] [ text (bottleMessage model) ]
             , checksView model
-            , div [class "col-md-12 text-center "] [ button [class "btn-lg btn-success active", onClick Model.Submit] [ text "SUBMIT"],button [ class "btn-lg btn-danger active", onClick Model.Clear ] [ text "Clear" ]]]
-            , div [ class "col-md-12 text-center" ] [ text (responseView model) ] ]
+            , div [class "col-md-12 text-center "] [ button [class "btn-lg btn-success active", onClick Model.Submit] [ text "SUBMIT"],button [ class "btn-lg btn-danger active", onClick Model.Clear ] [ text "Clear" ] ]
+            , div [ class "col-md-12 text-center" ] [ text (responseView model) ], div [class "row"] [ div [ class "col-md-12 text-center" ] [ text (
+               case model.dateString of
+                  Ok value -> Date.toString value
+                  Err error -> error) ] ] ] ]
 
 
 checksView : Model -> Html Msg
@@ -76,6 +80,7 @@ bottleMessage model =
     , case model.theMinute of
         Just theMinute -> theMinute
         Nothing -> ""
+    , ":00"
     , model.timeZone, ","
     , if model.highT then "112.0" else model.temp, ","
     , if model.zeroW then "0" else model.weight, ","
@@ -83,7 +88,8 @@ bottleMessage model =
     , if model.lowS then "2" else model.signal, ","
     , model.x, ","
     , model.y, ","
-    , model.z ]
+    , model.z
+    , Basics.toString model.unixTime ]
 
 
 responseView : Model -> String

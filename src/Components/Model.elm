@@ -1,7 +1,7 @@
 module Model exposing (..)
 
 import Http as HT exposing (..)
-
+import ISO8601 as Date exposing(..)
 
 type Msg
     = FirmWare String
@@ -48,7 +48,8 @@ type alias Model =
     , month : Maybe String
     , theHour : Maybe String
     , theMinute : Maybe String
-    , dateString : String
+    , dateString : Result String Date.Time
+    , unixTime : Int
     , responseData : String
     , responseNumber : String
     , failData : Maybe HT.Error

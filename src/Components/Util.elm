@@ -8,6 +8,7 @@ import Json.Encode as Encode exposing (object, encode, string, Value)
 import Task
 import String exposing (..)
 import Http as HT
+import ISO8601 as Date exposing(..)
 
 
 
@@ -36,7 +37,8 @@ init =
   , month =  Nothing
   , theHour =  Nothing
   , theMinute = Nothing
-  , dateString = ""
+  , dateString = Err "error"
+  , unixTime = 0
   , responseData = ""
   , responseNumber = ""
   , failData = Nothing
@@ -72,7 +74,7 @@ getDateString model =
     case model.year of
         Just year -> year
         Nothing -> "Year"
-      , "-"
+    , "-"
     , case model.month of
         Just month -> month
         Nothing -> "Month"
@@ -88,16 +90,23 @@ getDateString model =
     , case model.theMinute of
         Just theMinute -> theMinute
         Nothing -> "Minute"
-    , ","
+    , ":"
+    , "00"
     , model.timeZone
   ]
+
 
 getjsonMessage : Model -> Encode.Value
 getjsonMessage model =
   Encode.object
-    [ ("message" , Encode.string (View.bottleMessage model))
+    [ ("message" , Encode.string (sendString model))
     ]
 --requests
+
+sendString : Model -> String
+sendString model = String.concat[model.firmware, ",", model.messageType, ",", model.meid, ",", model.seqNum, ";",
+  Basics.toString model.unixTime, ",", model.timeZone, ",", model.temp, ",", model.weight, ",", model.battery, ",", model.signal, ",", ",", model.x, ",", model.y, ",", model.z ]
+--a test post request
 postRequest : String -> String -> Cmd Msg
 postRequest username password =
   let
@@ -110,7 +119,7 @@ postRequest username password =
   in
     Task.perform Model.PostFail Model.PostSucceed (HT.post postDecoder url body)
 
-
+--submits the message in proper format to the server
 submitData : Model -> Cmd Msg
 submitData model =
   let
@@ -121,11 +130,20 @@ submitData model =
   in
     Task.perform Model.PostFail Model.PostSucceed (HT.post postDecoder url body)
 
+--decodes the response expects nothing back right now
 postDecoder : Decoder String
 postDecoder = Decode.string
 
+--converts the time inputed to unix time
+convertToUnixTime : Result String Date.Time -> Int
+convertToUnixTime time =
+  case time of
+    Ok value -> Date.toTime value
+    Err error -> -1
 
-{-submitMessage : Model -> Cmd Msg
+
+{-submit using still figuring out
+submitMessage : Model -> Cmd Msg
 submitMessage model =
   let
     url = "http://localhost:8081"
