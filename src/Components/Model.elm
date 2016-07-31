@@ -23,6 +23,7 @@ type Msg
     | Submit
     | PostSucceed Item
     | PostFail HT.Error
+    | Dropdown
 
 type alias Item = String
 
@@ -53,4 +54,5 @@ type alias Model =
     , responseData : String
     , responseNumber : String
     , failData : Maybe HT.Error
+    , dropDown : Bool
     }

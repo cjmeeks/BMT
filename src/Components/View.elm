@@ -16,7 +16,23 @@ view model =
         firmView =
             div [ class "col-md-3 text-center lead" ] [ text "FirmWare", div [] [input [ onInput Model.FirmWare] [] ] ]
         meidView =
-            div [ class "col-md-3 text-center lead" ] [ text "Meid", div [] [input [ onInput Model.Meid ] []] ]
+            div [ class "col-md-3 text-center lead" ] [ div [ class "dropdown lead" ]
+              [ button [ attribute "aria-expanded" "true", attribute "aria-haspopup" "true", class "btn btn-default dropdown-toggle", attribute "data-toggle" "dropdown", id "dropdownMenu1", type' "button", onClick Model.Dropdown ]
+                  [ text "Dropdown"
+                  , span [ class "caret" ]
+                      []
+                  ]
+              , ul [ attribute "aria-labelledby" "dropdownMenu1", class "dropdown-menu" ]
+                  [ li []
+                      [ text model.meid ]
+                  , li []
+                      [ text model.meid ]
+                  , li []
+                      [  text model.meid ]
+                  , li [ class "divider", attribute "role" "separator" ]
+                      []
+                  ]
+              ] ]
         seqView =
             div [ class "col-md-3 text-center lead" ] [ text "Sequence Number", div [] [input [ onInput Model.SeqNum ] []] ]
         dateView =
@@ -90,6 +106,10 @@ bottleMessage model =
     , model.y, ","
     , model.z
     , Basics.toString model.unixTime ]
+
+
+{-meidDrop: Model -> Html Msg
+meidDrop model =-}
 
 
 responseView : Model -> String

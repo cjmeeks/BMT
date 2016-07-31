@@ -57,9 +57,9 @@ update msg model =
             ({ model | highT = bool }, Cmd.none)
 
         Model.Submit ->
-          (model , submitData {model | dateString = Date.fromString (getDateString model)
-                                     , unixTime = convertToUnixTime model.dateString})
-
+          (model, submitData {model | unixTime = convertToUnixTime (Date.fromString (getDateString model))})
+          --submitData {model | unixTime = convertToUnixTime (Date.fromString (getDateString model))}
+          --{model | dateString = Date.fromString (getDateString model) },
         Model.PostSucceed success->
           (model, Cmd.none)
 
@@ -71,3 +71,6 @@ update msg model =
             BadResponse number response -> {model |  responseNumber =  Basics.toString number
                                                   ,  responseData = response}
           , Cmd.none)
+
+        Model.Dropdown ->
+          ({model | dropDown = if model.dropDown then False else True}, Cmd.none)

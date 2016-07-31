@@ -1,7 +1,6 @@
 module Util exposing (..)
 
 import Model exposing (Model, Item, Msg)
-import View exposing (..)
 import Array exposing (..)
 import Json.Decode as Decode exposing ((:=), object1, string, int, Decoder)
 import Json.Encode as Encode exposing (object, encode, string, Value)
@@ -42,6 +41,7 @@ init =
   , responseData = ""
   , responseNumber = ""
   , failData = Nothing
+  , dropDown = False
   }
   , Cmd.none)
 
@@ -91,7 +91,7 @@ getDateString model =
         Just theMinute -> theMinute
         Nothing -> "Minute"
     , ":"
-    , "00"
+    , "00.00"
     , model.timeZone
   ]
 
