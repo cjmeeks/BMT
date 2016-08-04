@@ -15,9 +15,10 @@ view model =
     let
         firmView =
             div [ class "col-md-3 text-center lead" ] [ text "FirmWare", div [] [input [ onInput Model.FirmWare] [] ] ]
-        meidView =
-            div [ class "col-md-3 text-center lead" ] [ div [ class "dropdown lead" ]
-              [ button [ attribute "aria-expanded" "true", attribute "aria-haspopup" "true", class "btn btn-default dropdown-toggle", attribute "data-toggle" "dropdown", id "dropdownMenu1", type' "button", onClick Model.Dropdown ]
+        meidView = div [class "col-md-3 text-center lead"] [ text "Meid", div [] [selectMenu] ]
+
+            {-div [ class "col-md-3 text-center lead" ] [ div [ class "dropdown lead" ]
+              [ button [ attribute "aria-expanded" "true", attribute "aria-haspopup" "true", class "btn btn-default dropdown-toggle", attribute "data-toggle" "true", id "dropdownMenu1", type' "button", onClick Model.Dropdown ]
                   [ text "Dropdown"
                   , span [ class "caret" ]
                       []
@@ -32,7 +33,7 @@ view model =
                   , li [ class "divider", attribute "role" "separator" ]
                       []
                   ]
-              ] ]
+              ] ]-}
         seqView =
             div [ class "col-md-3 text-center lead" ] [ text "Sequence Number", div [] [input [ onInput Model.SeqNum ] []] ]
         dateView =
@@ -115,3 +116,33 @@ meidDrop model =-}
 responseView : Model -> String
 responseView model =
    String.concat[model.responseNumber , " :: " , model.responseData]
+
+selectMenu : Html Msg
+selectMenu =
+   Html.node "div" [ attribute "style" "position:relative;width:200px;height:25px;border:0;padding:0;margin:0;" ]
+    [ Html.text "\r\n"
+    , Html.node "select"
+        [ attribute "style" "position:absolute;top:0px;left:0px;width:200px; height:25px;line-height:20px;margin:0;padding:0;"
+        ]
+        [ Html.text "\r\n   "
+        , Html.node "option" [] []
+        , Html.text "\r\n   "
+        , Html.node "option" [ attribute "value" "one" ] [Html.text "one" ]
+        , Html.text "\r\n   "
+        , Html.node "option" [ attribute "value" "two" ] [ Html.text "two" ]
+        , Html.text "\r\n   "
+        , Html.node "option" [ attribute "value" "three" ] [ Html.text "three" ]
+        , Html.text "\r\n"
+        ]
+    , Html.text "\r\n"
+    , Html.node "input"
+        [ attribute "name" "displayValue"
+        , attribute "placeholder" "add/select a value"
+        , attribute "id" "displayValue"
+        , attribute "style" "position:absolute;top:0px;left:0px;width:183px;width:180px\9;#width:180px;height:23px; height:21px\9;#height:18px;border:1px solid #556;"
+        , attribute "onfocus" "this.select()"
+        , attribute "type" "text"
+        ]
+        [input [onInput Model.Meid] []]
+    , Html.text "\r\n"
+    ]

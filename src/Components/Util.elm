@@ -41,7 +41,6 @@ init =
   , responseData = ""
   , responseNumber = ""
   , failData = Nothing
-  , dropDown = False
   }
   , Cmd.none)
 

@@ -73,4 +73,4 @@ update msg model =
           , Cmd.none)
 
         Model.Dropdown ->
-          ({model | dropDown = if model.dropDown then False else True}, Cmd.none)
+          (model, Cmd.none)

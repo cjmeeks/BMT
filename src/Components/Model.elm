@@ -54,5 +54,4 @@ type alias Model =
     , responseData : String
     , responseNumber : String
     , failData : Maybe HT.Error
-    , dropDown : Bool
     }
