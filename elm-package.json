@@ -4,14 +4,23 @@
     "repository": "https://github.com/moarwick/elm-webpack-starter.git",
     "license": "MIT",
     "source-directories": [
-        "src"
+        "src",
+        "src/Components"
     ],
-    "exposed-modules": [],
+    "exposed-modules": [
+        "Form",
+        "Form.Error",
+        "Form.Validate",
+        "Form.Field",
+        "Form.Input"
+    ],
     "dependencies": {
         "elm-lang/core": "4.0.0 <= v < 5.0.0",
         "elm-lang/html": "1.0.0 <= v < 2.0.0",
         "evancz/elm-http": "3.0.1 <= v < 4.0.0",
-        "evancz/elm-markdown": "3.0.0 <= v < 4.0.0"
+        "evancz/elm-markdown": "3.0.0 <= v < 4.0.0",
+        "jweir/elm-iso8601": "2.1.1 <= v < 3.0.0",
+        "rluiten/elm-date-extra": "7.1.0 <= v < 8.0.0"
     },
     "elm-version": "0.17.0 <= v < 0.18.0"
 }
