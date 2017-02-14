@@ -1,7 +1,8 @@
 module Model exposing (..)
 
 import Http as HT exposing (..)
-import ISO8601 as Date exposing(..)
+import ISO8601 as Date exposing (..)
+
 
 type Msg
     = FirmWare String
@@ -25,7 +26,10 @@ type Msg
     | PostFail HT.Error
     | Dropdown
 
-type alias Item = String
+
+type alias Item =
+    String
+
 
 type alias Model =
     { firmware : String
