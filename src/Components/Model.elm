@@ -22,8 +22,7 @@ type Msg
     | HighTemp Bool
     | MessageType String
     | Submit
-    | PostSucceed Item
-    | PostFail HT.Error
+    | POST (Result HT.Error String)
     | Dropdown
 
 

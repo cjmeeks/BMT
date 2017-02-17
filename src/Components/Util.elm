@@ -4,7 +4,6 @@ import Model exposing (Model, Item, Msg)
 import Array exposing (..)
 import Json.Decode as Decode exposing (string, int, Decoder)
 import Json.Encode as Encode exposing (object, encode, string, Value)
-import Task
 import String exposing (..)
 import Http as HT
 import ISO8601 as Date exposing (..)
@@ -169,9 +168,10 @@ postRequest username password =
                 [ HT.stringPart "user" username
                 , HT.stringPart "password" password
                 ]
+        request =
+            HT.post url body postDecoder
     in
-        HT.post postDecoder url body
-          |> Task.perform Model.PostFail Model.PostSucceed
+      HT.send Model.POST request
 
 
 
@@ -188,9 +188,13 @@ submitData model =
             (Encode.encode 0 (getjsonMessage model))
 
         body =
-            HT.stringBody message
+            HT.jsonBody (Encode.string (sendString model))
+
+        request =
+          HT.post url body postDecoder
+
     in
-        Task.perform Model.PostFail Model.PostSucceed (HT.post postDecoder url body)
+        HT.send Model.POST request
 
 
 

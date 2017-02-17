@@ -3,86 +3,68 @@ module Update exposing (..)
 import Model exposing (Model, Item, Msg)
 import Util exposing (splitTime, splitDate, submitData, getDateString, postRequest, init, convertToUnixTime)
 import ISO8601 as Date exposing (..)
-import Http exposing (..)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Model.FirmWare firm ->
-            ( { model | firmware = firm }, Cmd.none )
+            { model | firmware = firm } ! []
 
         Model.Meid meid ->
-            ( { model | meid = meid }, Cmd.none )
+            { model | meid = meid } ! []
 
         Model.SeqNum num ->
-            ( { model | seqNum = num }, Cmd.none )
+            { model | seqNum = num } ! []
 
         Model.Date date ->
-            ( splitDate date model, Cmd.none )
+            splitDate date model ! []
 
         Model.Time time ->
-            ( splitTime time model, Cmd.none )
+            splitTime time model ! []
 
         Model.TimeZone zone ->
-            ( { model | timeZone = zone }, Cmd.none )
+            { model | timeZone = zone } ! []
 
         Model.Temp temp ->
-            ( { model | temp = temp }, Cmd.none )
+            { model | temp = temp } ! []
 
         Model.Weight weight ->
-            ( { model | weight = weight }, Cmd.none )
+            { model | weight = weight } ! []
 
         Model.Battery battery ->
-            ( { model | battery = battery }, Cmd.none )
+            { model | battery = battery } ! []
 
         Model.Signal signal ->
-            ( { model | signal = signal }, Cmd.none )
+            { model | signal = signal } ! []
 
         Model.MessageType messType ->
-            ( { model | messageType = messType }, Cmd.none )
+            { model | messageType = messType } ! []
 
         Model.Clear ->
             init
 
         Model.LowSig bool ->
-            ( { model | lowS = bool }, Cmd.none )
+            { model | lowS = bool } ! []
 
         Model.LowBat bool ->
-            ( { model | lowB = bool }, Cmd.none )
+            { model | lowB = bool } ! []
 
         Model.ZeroWeight bool ->
-            ( { model | zeroW = bool }, Cmd.none )
+             { model | zeroW = bool } ! []
 
         Model.HighTemp bool ->
-            ( { model | highT = bool }, Cmd.none )
+             { model | highT = bool } ! []
 
         Model.Submit ->
             ( model, submitData { model | unixTime = convertToUnixTime (Date.fromString (getDateString model)) } )
 
-        --submitData {model | unixTime = convertToUnixTime (Date.fromString (getDateString model))}
-        --{model | dateString = Date.fromString (getDateString model) },
-        Model.PostSucceed success ->
-            ( model, Cmd.none )
+        Model.POST (Result.Ok valueStr) ->
+          model ! []
 
-        Model.PostFail error ->
-            ( case error of
-                Timeout ->
-                    { model | z = "Timeout" }
+        Model.POST (Result.Err err) ->
+          {model | responseData = (Basics.toString err)} ! []
 
-                NetworkError ->
-                    { model | z = " NetworkError" }
-
-                UnexpectedPayload payload ->
-                    { model | responseData = "Post delivered" }
-
-                BadResponse number response ->
-                    { model
-                        | responseNumber = Basics.toString number
-                        , responseData = response
-                    }
-            , Cmd.none
-            )
 
         Model.Dropdown ->
-            ( model, Cmd.none )
+            model ! []
